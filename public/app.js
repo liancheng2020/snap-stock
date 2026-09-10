@@ -19,7 +19,7 @@ $("#search").onsubmit = async (e) => {
   $("#submit").disabled = true;
   $("#result").hidden = true;
   $("#empty").hidden = false;
-  $("#status").textContent = "正在获取真实日线并计算指标，最多约 20 秒…";
+  $("#status").textContent = "正在读取行情、计算指标并生成解读，最多约 45 秒…";
   try {
     const r = await fetch(
       "/api/analysis?" +
@@ -33,7 +33,10 @@ $("#search").onsubmit = async (e) => {
     data = body;
     selected = null;
     render();
-    $("#status").textContent = "已完成 · 规则解读，无模型生成或模拟数据";
+    $("#status").textContent =
+      data.explanation?.provider === "deepseek"
+        ? "已完成 · DeepSeek 辅助解读；指标与信号仍由程序计算"
+        : "已完成 · " + (data.explanation?.reason || "规则解读");
   } catch (error) {
     $("#status").textContent = error.message;
     data = null;
@@ -74,6 +77,29 @@ function render() {
       return d;
     }),
   );
+  if (data.explanation?.provider === "deepseek") {
+    const titles = [
+      "DeepSeek · 趋势解释",
+      "DeepSeek · 动能解释",
+      "DeepSeek · 分歧与局限",
+    ];
+    data.explanation.sections.forEach((section, index) => {
+      const card = element("article", undefined, "panel");
+      const details = element("details");
+      details.append(element("summary", "查看引用的程序事实"));
+      section.factIds.forEach((id) =>
+        details.append(
+          element("p", id + "：" + JSON.stringify(data.explanation.facts[id])),
+        ),
+      );
+      card.append(
+        element("h3", titles[index]),
+        element("p", section.text),
+        details,
+      );
+      $("#interpretation").append(card);
+    });
+  }
   $("#source").textContent =
     data.source +
     " · " +

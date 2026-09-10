@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { history } from "./lib/market.js";
 import { analyze } from "./lib/indicators.js";
+import { explain } from "./lib/explanation.js";
 const assets = {
   "/": ["public/index.html", "text/html"],
   "/app.js": ["public/app.js", "text/javascript"],
@@ -10,7 +11,12 @@ const assets = {
   "/logo.svg": ["public/logo.svg", "image/svg+xml"],
 };
 let active = 0;
-createServer(async (req, res) => {
+const port = Number(process.env.PORT || 3100);
+if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  console.error("[Snap Stock] PORT 必须为 1–65535 的整数，请检查 .env。");
+  process.exit(1);
+}
+const server = createServer(async (req, res) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader(
     "Content-Security-Policy",
@@ -33,9 +39,12 @@ createServer(async (req, res) => {
         url.searchParams.get("market"),
         url.searchParams.get("code"),
       );
+      const analysis = analyze(data.bars);
+      const explanation = await explain({ ...data, ...analysis });
       json(200, {
         ...data,
-        ...analyze(data.bars),
+        ...analysis,
+        explanation,
         bars: undefined,
         version: "1.0.0",
         parameters: {
@@ -58,6 +67,30 @@ createServer(async (req, res) => {
   if (!asset) return json(404, { error: "Not found" });
   res.writeHead(200, { "Content-Type": asset[1] + "; charset=utf-8" });
   res.end(await readFile(new URL(asset[0], import.meta.url)));
-}).listen(Number(process.env.PORT || 3100), "127.0.0.1", () =>
-  console.log("Snap Stock: http://localhost:" + (process.env.PORT || 3100)),
+});
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(
+      "[Snap Stock] 端口 " +
+        port +
+        " 已被占用。若已有本项目运行，可直接访问 http://localhost:" +
+        port +
+        "；要重启，请先在旧终端按 Ctrl+C，或将 .env 中的 PORT 改为其他可用端口后重试。",
+    );
+  } else {
+    console.error("[Snap Stock] 启动失败：" + error.message);
+  }
+  process.exitCode = 1;
+});
+server.listen(port, "127.0.0.1", () =>
+  console.log("Snap Stock: http://localhost:" + port),
 );
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, () => {
+    server.close(() => process.exit(0));
+    setTimeout(() => {
+      server.closeAllConnections();
+      process.exit(0);
+    }, 3000).unref();
+  });
+}
