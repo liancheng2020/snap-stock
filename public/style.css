@@ -246,10 +246,12 @@ svg.chart {
 }
 #events {
   display: grid;
+  align-content: start;
   gap: 10px;
-  max-height: 350px;
+  flex: 1 1 0;
+  min-height: 120px;
   overflow: auto;
-  margin-bottom: auto;
+  scrollbar-gutter: stable;
 }
 #events button {
   background: #142725;
@@ -290,7 +292,7 @@ svg.chart {
 }
 .explanations {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   margin: 20px 0;
 }
@@ -300,6 +302,86 @@ svg.chart {
 }
 .explanations p {
   color: var(--muted);
+}
+.insight-card {
+  border-radius: 8px;
+}
+.insight-flow {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+.insight-flow li {
+  position: relative;
+  min-width: 0;
+  border-top: 2px solid var(--mint);
+  padding-top: 14px;
+}
+.insight-flow li:nth-child(2) {
+  border-color: #ebcc7e;
+}
+.insight-flow li:nth-child(3) {
+  border-color: #baabf5;
+}
+.insight-flow li:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: -16px;
+  right: -23px;
+  color: var(--muted);
+}
+.step-index {
+  font:
+    12px/1.5 Consolas,
+    monospace;
+  color: var(--muted);
+}
+.insight-flow h4 {
+  margin: 6px 0 10px;
+  font-size: 16px;
+}
+.insight-flow p {
+  margin: 0;
+}
+.analysis-details {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  margin-top: 20px;
+}
+.context-sections {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+.context-sections section {
+  min-width: 0;
+}
+.rsi-figure {
+  margin: 24px 0 0;
+  max-width: 540px;
+}
+.rsi-figure meter {
+  display: block;
+  width: 100%;
+  height: 22px;
+}
+.rsi-figure figcaption {
+  font-size: 13px;
+}
+.meter-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+#events button[aria-pressed="true"] {
+  outline: 2px solid var(--mint);
+  outline-offset: -3px;
 }
 .methodology {
   font-size: 13px;
@@ -321,6 +403,21 @@ body [hidden] {
   display: none !important;
 }
 @media (max-width: 850px) {
+  #events {
+    flex: none;
+    max-height: 420px;
+    min-height: 0;
+  }
+  .insight-flow,
+  .context-sections {
+    grid-template-columns: 1fr;
+  }
+  .insight-flow {
+    gap: 24px;
+  }
+  .insight-flow li:not(:last-child)::after {
+    content: none;
+  }
   .workspace,
   .explanations {
     grid-template-columns: 1fr;

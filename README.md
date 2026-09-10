@@ -39,20 +39,11 @@ npm start
 
 ## Vercel 部署
 
-导入仓库根目录，使用 Node.js 22+。本项目使用 Vercel 的 Node.js HTTP
-服务自动检测，不要将 `npm start` 填入 Build Command，也不要将 Output Directory
-设为 `public`；清除手动覆盖，使用平台默认设置。
+1. 导入仓库根目录，使用 Node.js 22+，构建命令和输出目录保持默认。
+2. 按需添加 `DEEPSEEK_API_KEY`，启用支持 90 秒执行时长的 Fluid Compute；其余配置见 `vercel.json`。
+3. 部署后访问 `/health` 确认服务正常。云端不要填写 `localhost` / `127.0.0.1` 代理；行情源仍可能限制云服务器 IP。
 
-`vercel.json` 显式包含服务读取的 `public/**`，并设置 90 秒函数执行上限，
-覆盖个股行情、指数行情和模型解读的顺序请求。需要启用支持该时长的 Fluid Compute。
-部署后先检查 `/health` 返回 `status: ok`，再检查首页、`/app.js` 和 `/style.css`。
-Ready 仅表示部署完成，不代表运行时请求成功；失败时查看 Runtime Logs。
-
-`DEEPSEEK_API_KEY` 可选，不设置会使用规则解读。`DATA_PROXY_URL` 默认不填；
-不能填写本机的 `127.0.0.1` 或 `localhost` 代理，云端无法通过它访问你的电脑。
-行情源仍可能限制云服务器 IP，页面可访问并不保证所有行情请求成功。
-内存缓存与并发上限仅在单个实例内生效，不是全局限流；公开演示应设置访问保护
-或平台限流，并限制模型费用。
+公开演示请配置访问保护或限流，并限制模型费用；内存并发限制不等于全局限流。
 
 ## 使用边界
 

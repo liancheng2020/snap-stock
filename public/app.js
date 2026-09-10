@@ -70,36 +70,48 @@ function render() {
       return d;
     })(),
   );
-  renderContext();
-  $("#interpretation").replaceChildren(
-    ...data.interpretation.map((i) => {
-      const d = element("article", undefined, "panel");
-      d.append(element("h3", i.title), element("p", i.text));
-      return d;
-    }),
-  );
+  const rules = interpretationCard("程序计算解读", data.interpretation);
+  const context = element("details", undefined, "analysis-details");
+  context.append(element("summary", "市场背景、指标与数据边界"));
+  const contextBody = element("div", undefined, "context-sections");
+  context.append(contextBody);
+  rules.append(context);
+  renderContext(contextBody);
+  $("#interpretation").replaceChildren(rules);
   if (data.explanation?.provider === "deepseek") {
-    const titles = [
-      "DeepSeek · 现在怎么看",
-      "DeepSeek · 为什么这么说",
-      "DeepSeek · 接下来观察什么",
-    ];
+    const titles = ["现在怎么看", "为什么这么说", "接下来观察什么"];
+    const card = interpretationCard(
+      "DeepSeek 解读",
+      data.explanation.sections.map((section, index) => ({
+        title: titles[index],
+        text: section.text,
+      })),
+    );
+    const references = element("details", undefined, "analysis-details");
+    references.append(element("summary", "查看引用的程序事实"));
     data.explanation.sections.forEach((section, index) => {
-      const card = element("article", undefined, "panel");
-      const details = element("details");
-      details.append(element("summary", "查看引用的程序事实"));
+      const details = element("section");
+      details.append(element("h4", titles[index]));
       section.factIds.forEach((id) =>
         details.append(
           element("p", id + "：" + JSON.stringify(data.explanation.facts[id])),
         ),
       );
-      card.append(
-        element("h3", titles[index]),
-        element("p", section.text),
-        details,
-      );
-      $("#interpretation").append(card);
+      references.append(details);
     });
+    card.append(references);
+    $("#interpretation").append(card);
+  } else {
+    const card = element("article", undefined, "panel insight-card");
+    card.append(
+      element("h3", "DeepSeek 解读"),
+      element(
+        "p",
+        data.explanation?.reason || "本次未生成模型解读，请参考程序计算结果。",
+        "muted",
+      ),
+    );
+    $("#interpretation").append(card);
   }
   $("#source").textContent =
     data.source +
@@ -111,8 +123,14 @@ function render() {
   $("#events").replaceChildren(
     ...data.events.toReversed().map((event) => {
       const b = element("button", event.title, event.type);
+      b.setAttribute("aria-pressed", "false");
       b.append(element("small", event.date + " · " + event.context));
       b.onclick = () => {
+        $("#events")
+          .querySelectorAll("button")
+          .forEach((button) =>
+            button.setAttribute("aria-pressed", String(button === b)),
+          );
         selected = event.date;
         $("#evidence").textContent =
           event.date +
@@ -143,11 +161,58 @@ function render() {
   draw();
 }
 const ns = "http://www.w3.org/2000/svg";
-function renderContext() {
-  const container = $("#context");
+function interpretationCard(title, sections) {
+  const card = element("article", undefined, "panel insight-card");
+  card.append(element("h3", title));
+  const flow = element("ol", undefined, "insight-flow");
+  sections.forEach((section, index) => {
+    const step = element("li");
+    step.append(
+      element("span", String(index + 1).padStart(2, "0"), "step-index"),
+      element("h4", section.title),
+      element("p", section.text),
+    );
+    flow.append(step);
+  });
+  card.append(flow);
+  if (title === "程序计算解读" && Number.isFinite(data.technical?.rsi14)) {
+    const figure = element("figure", undefined, "rsi-figure");
+    figure.append(
+      element(
+        "figcaption",
+        "近期涨跌力度 · RSI14 " + fmt(data.technical.rsi14),
+      ),
+    );
+    const meter = element("meter");
+    meter.min = 0;
+    meter.max = 100;
+    meter.low = 30;
+    meter.high = 70;
+    meter.optimum = 50;
+    meter.value = data.technical.rsi14;
+    meter.setAttribute(
+      "aria-label",
+      "RSI14，低于30或高于70为常用极端区间，不代表买卖信号",
+    );
+    const labels = element("div", undefined, "meter-labels");
+    labels.append(
+      element("span", "0 · 跌势偏急"),
+      element("span", "30 — 70"),
+      element("span", "涨势偏急 · 100"),
+    );
+    figure.append(
+      meter,
+      labels,
+      element("p", "力度不是方向预测，极端值不代表马上反转。", "muted"),
+    );
+    card.append(figure);
+  }
+  return card;
+}
+function renderContext(container) {
   container.replaceChildren();
   const card = (title) => {
-    const node = element("article", undefined, "panel");
+    const node = element("section");
     node.append(element("h3", title));
     container.append(node);
     return node;
