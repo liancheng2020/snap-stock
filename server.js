@@ -73,8 +73,14 @@ const server = createServer(async (req, res) => {
     return json(200, { status: "ok", version: "1.0.0" });
   const asset = assets[url.pathname];
   if (!asset) return json(404, { error: "Not found" });
-  res.writeHead(200, { "Content-Type": asset[1] + "; charset=utf-8" });
-  res.end(await readFile(new URL(asset[0], import.meta.url)));
+  try {
+    const content = await readFile(new URL(asset[0], import.meta.url));
+    res.writeHead(200, { "Content-Type": asset[1] + "; charset=utf-8" });
+    res.end(content);
+  } catch (error) {
+    console.error("[Snap Stock] 静态资源读取失败", asset[0], error);
+    json(500, { error: "页面资源加载失败，请检查部署文件或联系维护者" });
+  }
 });
 server.on("error", (error) => {
   if (error.code === "EADDRINUSE") {
