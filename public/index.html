@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Snap Stock · 看懂走势</title>
+    <link rel="icon" href="/logo.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/"
+        ><img src="/logo.svg" alt="" />Snap<span>Stock</span></a
+      ><span class="edition">TECHNICAL INSIGHT / 01</span
+      ><a
+        href="https://github.com/liancheng2020/snap-stock"
+        target="_blank"
+        rel="noreferrer"
+        >GitHub ↗</a
+      >
+    </header>
+    <main>
+      <section class="hero">
+        <p class="eyebrow">LESS NOISE. MORE CONTEXT.</p>
+        <h1>看懂走势，<br /><span>不止看见指标。</span></h1>
+        <p>
+          从一只股票开始。把均线、MACD 和成交量，<br />变成有依据、看得懂的技术面解读。
+        </p>
+        <div class="pill">已收盘日线 · 规则计算 · 无需 API Key</div>
+      </section>
+      <form id="search" class="panel search">
+        <label
+          >市场<select id="market">
+            <option value="A">A 股 · 沪深</option>
+            <option value="US">美股</option>
+            <option value="HK">港股</option>
+          </select></label
+        ><label class="code"
+          >股票代码<input
+            id="code"
+            placeholder="例如 600519"
+            required
+            maxlength="12"
+            autocomplete="off" /></label
+        ><button id="submit">查看技术面 ↗</button>
+        <p>
+          示例：沪深 600519 / 美股 AAPL / 港股 00700。结果中请核对公司与交易所。
+        </p>
+      </form>
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="empty" class="empty panel">
+        <span>01 / INPUT A SYMBOL</span>
+        <h2>每个结论，都能找到依据。</h2>
+        <div class="features">
+          <p><b>趋势</b>价格与 MA20 / MA60</p>
+          <p><b>动能</b>MACD 交叉与上下文</p>
+          <p><b>量能</b>成交量与历史均量</p>
+        </div>
+      </section>
+      <section id="result" hidden>
+        <div class="result-head">
+          <div>
+            <p class="eyebrow">MARKET SNAPSHOT</p>
+            <h2 id="identity"></h2>
+            <p id="meta"></p>
+          </div>
+          <button id="export" class="secondary">导出分析 JSON ↓</button>
+        </div>
+        <div id="warnings" class="notice"></div>
+        <section class="summary panel">
+          <p class="eyebrow">30 秒，看懂最近发生了什么</p>
+          <h2 id="summary"></h2>
+          <div id="stats" class="stats"></div>
+        </section>
+        <section class="workspace">
+          <div class="panel charts">
+            <div class="chart-head">
+              <h3>价格与信号</h3>
+              <label
+                >展示范围<select id="range">
+                  <option value="22">近 1 个月</option>
+                  <option value="66" selected>近 3 个月</option>
+                  <option value="132">近 6 个月</option>
+                </select></label
+              >
+            </div>
+            <p class="muted">
+              日线 / 涨绿跌红 · MA20 金色 · MA60 紫色 · 点击 K
+              线或信号查看当日数值
+            </p>
+            <div id="chart"></div>
+            <p id="cursor" class="readout"></p>
+          </div>
+          <aside class="panel">
+            <p class="eyebrow">SIGNAL TIMELINE</p>
+            <h3>最近交叉事件</h3>
+            <p class="muted">点击定位；交叉发生日 ≠ 当前仍处于该状态</p>
+            <div id="events"></div>
+            <div id="evidence" class="readout">
+              选择信号查看前后数值与解释。
+            </div>
+          </aside>
+        </section>
+        <section id="interpretation" class="explanations"></section>
+        <details class="panel methodology">
+          <summary>计算口径与信号知识</summary>
+          <p>
+            MA 为收盘价简单均线。MACD 参数 12/26/9，DIF = EMA12 − EMA26，DEA =
+            EMA9(DIF)，柱 = 2 × (DIF − DEA)。EMA 用前 N 项均值初始化。
+          </p>
+          <p>
+            金叉：前一日 DIF ≤ DEA，当日 DIF >
+            DEA；死叉相反。所有信号在完整两年数据上计算，图表范围不改变计算结果。至少需要
+            120 根有效日线。
+          </p>
+          <p>
+            量比为当日成交量 / 前 20
+            个交易日平均成交量（不包含当日），不是交易软件的盘中量比。MA 与 MACD
+            并非独立证据。
+          </p>
+          <p id="source"></p>
+        </details>
+      </section>
+      <footer>
+        用于技术学习与历史走势解读，不提供买卖指令或收益承诺。数据可能延迟，重要信息请核验。<span
+          >SNAP STOCK / v1.0.0</span
+        >
+      </footer>
+    </main>
+  </body>
+</html>
