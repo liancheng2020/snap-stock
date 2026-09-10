@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 import { history } from "./lib/market.js";
 import { analyze } from "./lib/indicators.js";
 import { explain } from "./lib/explanation.js";
+import { marketContext, newsContext } from "./lib/context.js";
+import { enrich } from "./lib/insight.js";
 const assets = {
   "/": ["public/index.html", "text/html"],
   "/app.js": ["public/app.js", "text/javascript"],
@@ -35,11 +37,14 @@ const server = createServer(async (req, res) => {
     if (active >= 4) return json(429, { error: "请求较多，请稍后重试" });
     active++;
     try {
+      if (!["A", "US", "HK"].includes(url.searchParams.get("market")))
+        throw new Error("仅支持 A、US、HK 市场");
       const data = await history(
         url.searchParams.get("market"),
         url.searchParams.get("code"),
       );
-      const analysis = analyze(data.bars);
+      const market = await marketContext(url.searchParams.get("market"), data);
+      const analysis = enrich(analyze(data.bars), market, newsContext);
       const explanation = await explain({ ...data, ...analysis });
       json(200, {
         ...data,
@@ -49,6 +54,9 @@ const server = createServer(async (req, res) => {
         version: "1.0.0",
         parameters: {
           ma: [20, 60],
+          rsi: { period: 14, smoothing: "Wilder", flat: 50 },
+          atr: { period: 14, smoothing: "Wilder", firstTR: "high-low" },
+          levels: "此前 20/60 根日线，排除当前分析日；复权价格",
           macd: [12, 26, 9],
           histogram: "2 × (DIF - DEA)",
           emaSeed: "首 N 项 SMA",

@@ -19,7 +19,7 @@ $("#search").onsubmit = async (e) => {
   $("#submit").disabled = true;
   $("#result").hidden = true;
   $("#empty").hidden = false;
-  $("#status").textContent = "正在读取行情、计算指标并生成解读，最多约 45 秒…";
+  $("#status").textContent = "正在读取行情、计算指标并生成解读，最多约 65 秒…";
   try {
     const r = await fetch(
       "/api/analysis?" +
@@ -70,6 +70,7 @@ function render() {
       return d;
     })(),
   );
+  renderContext();
   $("#interpretation").replaceChildren(
     ...data.interpretation.map((i) => {
       const d = element("article", undefined, "panel");
@@ -79,9 +80,9 @@ function render() {
   );
   if (data.explanation?.provider === "deepseek") {
     const titles = [
-      "DeepSeek · 趋势解释",
-      "DeepSeek · 动能解释",
-      "DeepSeek · 分歧与局限",
+      "DeepSeek · 现在怎么看",
+      "DeepSeek · 为什么这么说",
+      "DeepSeek · 接下来观察什么",
     ];
     data.explanation.sections.forEach((section, index) => {
       const card = element("article", undefined, "panel");
@@ -142,6 +143,132 @@ function render() {
   draw();
 }
 const ns = "http://www.w3.org/2000/svg";
+function renderContext() {
+  const container = $("#context");
+  container.replaceChildren();
+  const card = (title) => {
+    const node = element("article", undefined, "panel");
+    node.append(element("h3", title));
+    container.append(node);
+    return node;
+  };
+  const market = card("市场背景");
+  const context = data.market;
+  if (context?.status === "available") {
+    const period = context.periods[20];
+    market.append(
+      element(
+        "p",
+        "近 20 个共同交易日，个股" +
+          (period.excess > 0 ? "跑赢" : period.excess < 0 ? "跑输" : "持平于") +
+          context.name +
+          (period.excess === 0
+            ? "。"
+            : " " + fmt(Math.abs(period.excess)) + " 个百分点。"),
+      ),
+    );
+    for (const n of [5, 20]) {
+      const p = context.periods[n];
+      market.append(
+        element(
+          "p",
+          n +
+            " 日：个股 " +
+            fmt(p.stockReturn) +
+            "% / 指数 " +
+            fmt(p.benchmarkReturn) +
+            "%",
+          "muted",
+        ),
+      );
+    }
+    market.append(
+      element(
+        "p",
+        "比较区间 " +
+          period.from +
+          " 至 " +
+          period.to +
+          " · " +
+          context.name +
+          "（" +
+          context.symbol +
+          "）",
+        "muted",
+      ),
+    );
+    const detail = element("details");
+    detail.append(
+      element("summary", "数据来源与比较口径"),
+      element("p", context.source + " · 获取于 " + context.fetchedAt),
+      element("p", context.note),
+    );
+    market.append(detail);
+  } else market.append(element("p", context?.reason || "市场背景暂不可用。"));
+  const technical = card("价格位置与波动");
+  const t = data.technical;
+  if (t) {
+    technical.append(
+      element(
+        "p",
+        "RSI14 " +
+          fmt(t.rsi14) +
+          " · " +
+          (t.rsi14 >= 70
+            ? "近期上涨偏急，不等于马上会跌。"
+            : t.rsi14 <= 30
+              ? "近期下跌偏急，不等于马上反弹。"
+              : "未进入常用的 30/70 极端区间。"),
+      ),
+      element(
+        "p",
+        "ATR14 " +
+          fmt(t.atr14) +
+          " " +
+          data.identity.currency +
+          "，约为收盘价的 " +
+          fmt(t.atrPercent) +
+          "%：用于衡量近期日间波动，不预测方向。",
+      ),
+    );
+    const details = element("details");
+    details.append(element("summary", "查看 20/60 日观察位与口径"));
+    for (const n of [20, 60]) {
+      const l = t.levels[n];
+      details.append(
+        element(
+          "p",
+          "此前 " +
+            n +
+            " 日：高点 " +
+            fmt(l.high) +
+            "（" +
+            l.highDate +
+            "），低点 " +
+            fmt(l.low) +
+            "（" +
+            l.lowDate +
+            "）。",
+        ),
+      );
+    }
+    details.append(
+      element(
+        "p",
+        "观察位不含当前分析日；均为源复权价格。RSI/ATR 使用 Wilder 14 日平滑；ATR 包含跳空。",
+      ),
+    );
+    technical.append(details);
+  }
+  const news = card("资讯与事件");
+  news.append(
+    element("p", "未接入资讯源", "muted"),
+    element(
+      "p",
+      data.news?.reason || "本次分析不包含新闻或公告，不由模型补写。",
+    ),
+  );
+}
 function svgEl(tag, attrs, text) {
   const e = document.createElementNS(ns, tag);
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
